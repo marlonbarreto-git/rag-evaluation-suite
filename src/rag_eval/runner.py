@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from rag_eval.metrics import AnswerRelevancy, BaseMetric, ContextPrecision, Faithfulness
 from rag_eval.models import EvalSample, MetricResult
