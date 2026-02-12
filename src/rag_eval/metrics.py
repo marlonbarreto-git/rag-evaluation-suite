@@ -5,6 +5,9 @@ from sentence_transformers import SentenceTransformer
 
 from rag_eval.models import EvalSample, MetricResult
 
+CONTEXT_RELEVANCE_THRESHOLD = 0.5
+"""Minimum cosine similarity for a context chunk to be considered relevant."""
+
 
 def _split_sentences(text: str) -> list[str]:
     """Split text into sentences by common delimiters."""
@@ -21,6 +24,7 @@ def _split_sentences(text: str) -> list[str]:
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """Compute cosine similarity between two vectors, returning 0.0 for zero-norm inputs."""
     norm_a = np.linalg.norm(a)
     norm_b = np.linalg.norm(b)
     if norm_a == 0 or norm_b == 0:
@@ -29,18 +33,26 @@ def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
 
 class BaseMetric(ABC):
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    """Abstract base class for all RAG evaluation metrics."""
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
         self._model = SentenceTransformer(model_name)
 
     @property
     @abstractmethod
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """Return the unique name identifier for this metric."""
+        ...
 
     @abstractmethod
-    def evaluate(self, sample: EvalSample) -> MetricResult: ...
+    def evaluate(self, sample: EvalSample) -> MetricResult:
+        """Evaluate a single sample and return a MetricResult."""
+        ...
 
 
 class AnswerRelevancy(BaseMetric):
+    """Measures how relevant the answer is to the question using embedding similarity."""
+
     @property
     def name(self) -> str:
         return "answer_relevancy"
@@ -57,6 +69,8 @@ class AnswerRelevancy(BaseMetric):
 
 
 class Faithfulness(BaseMetric):
+    """Measures how grounded the answer is in the provided contexts."""
+
     @property
     def name(self) -> str:
         return "faithfulness"
@@ -88,6 +102,8 @@ class Faithfulness(BaseMetric):
 
 
 class ContextPrecision(BaseMetric):
+    """Measures the precision of retrieved contexts using Average Precision."""
+
     @property
     def name(self) -> str:
         return "context_precision"
@@ -108,8 +124,7 @@ class ContextPrecision(BaseMetric):
             _cosine_similarity(ref_emb, c_emb) for c_emb in context_embeddings
         ]
 
-        threshold = 0.5
-        relevance = [1 if sim >= threshold else 0 for sim in similarities]
+        relevance = [1 if sim >= CONTEXT_RELEVANCE_THRESHOLD else 0 for sim in similarities]
 
         num_relevant = sum(relevance)
         if num_relevant == 0:
