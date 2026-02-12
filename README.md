@@ -1,65 +1,83 @@
-# rag-evaluation-suite
+# RAG Evaluation Suite
 
-Evaluation suite for RAG systems. Measures faithfulness, answer relevancy, and context precision using embedding-based metrics. No external LLM calls required.
+Evaluation framework for RAG systems measuring faithfulness, answer relevancy, and context precision.
 
-## Features
+## Overview
 
-- **Answer Relevancy**: Semantic similarity between question and answer
-- **Faithfulness**: How well the answer is grounded in retrieved contexts
-- **Context Precision**: Whether relevant contexts are ranked higher (Average Precision)
-- **Evaluation Runner**: Run all metrics on datasets with aggregate reporting
-- **Golden Dataset**: Load evaluation sets from dictionaries for repeatable testing
+RAG Evaluation Suite provides embedding-based metrics to assess RAG pipeline quality without requiring an LLM judge. It evaluates three dimensions: whether the answer is relevant to the question (Answer Relevancy), whether the answer is grounded in the provided context (Faithfulness), and whether the retrieved contexts are relevant to the expected answer (Context Precision via Average Precision).
 
 ## Architecture
 
 ```
-rag_eval/
-├── models.py    # EvalSample, MetricResult dataclasses
-├── metrics.py   # AnswerRelevancy, Faithfulness, ContextPrecision
-└── runner.py    # EvalRunner, EvalReport, SampleReport
+EvalSample (question, answer, contexts, ground_truth)
+  |
+  v
+EvalRunner
+  |
+  +---> AnswerRelevancy
+  |        cosine_similarity(question_emb, answer_emb)
+  |
+  +---> Faithfulness
+  |        per-sentence max similarity against contexts
+  |        score = mean(sentence_scores)
+  |
+  +---> ContextPrecision
+  |        Average Precision of context relevance
+  |        threshold = 0.5 cosine similarity
+  |
+  v
+EvalReport
+  |
+  +---> Per-sample MetricResult (name, score 0-1, details)
+  +---> Summary (average score per metric across dataset)
 ```
+
+## Features
+
+- Answer Relevancy: cosine similarity between question and answer embeddings
+- Faithfulness: per-sentence grounding check against retrieved contexts
+- Context Precision: Average Precision measuring context ordering quality
+- No LLM judge required -- purely embedding-based evaluation
+- Batch evaluation with dataset-level summary statistics
+- Golden dataset loading from dictionaries
+
+## Tech Stack
+
+- Python 3.11+
+- sentence-transformers
+- NumPy
+- Pydantic
 
 ## Quick Start
 
-```python
-from rag_eval.models import EvalSample
-from rag_eval.runner import EvalRunner
-
-samples = [
-    EvalSample(
-        question="What is Python?",
-        answer="Python is a programming language used for data science.",
-        contexts=["Python is a high-level programming language.", "It is widely used in data science."],
-        ground_truth="Python is a high-level programming language.",
-    ),
-]
-
-runner = EvalRunner()
-report = runner.evaluate_dataset(samples)
-print(report.summary())
-# {'answer_relevancy': 0.85, 'faithfulness': 0.92, 'context_precision': 0.95}
+```bash
+git clone https://github.com/marlonbarreto-git/rag-evaluation-suite.git
+cd rag-evaluation-suite
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest
 ```
 
-## Metrics
+## Project Structure
 
-| Metric | What it measures | Range |
-|--------|-----------------|-------|
-| Answer Relevancy | Is the answer relevant to the question? | 0-1 |
-| Faithfulness | Is the answer grounded in the provided contexts? | 0-1 |
-| Context Precision | Are relevant contexts ranked higher? | 0-1 |
+```
+src/rag_eval/
+  __init__.py
+  models.py    # EvalSample and MetricResult dataclasses
+  metrics.py   # BaseMetric ABC + AnswerRelevancy, Faithfulness, ContextPrecision
+  runner.py    # EvalRunner with batch evaluation and reporting
+tests/
+  test_metrics.py
+  test_runner.py
+```
 
-## Development
+## Testing
 
 ```bash
-uv venv .venv --python 3.12
-uv pip install -e ".[dev]"
-uv run pytest tests/ -v
+pytest -v --cov=src/rag_eval
 ```
 
-## Roadmap
-
-- **v2**: Custom metrics (hallucination_rate, citation_accuracy), golden dataset management
-- **v3**: CI/CD integration (GitHub Actions), regression detection, trend dashboard
+29 tests covering all three metrics, edge cases, batch evaluation, and report aggregation.
 
 ## License
 
