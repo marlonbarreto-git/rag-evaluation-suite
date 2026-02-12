@@ -2,12 +2,25 @@
 name = "rag-evaluation-suite"
 version = "0.1.0"
 description = "Evaluation suite for RAG systems. Measures faithfulness, answer relevancy, and context precision."
+license = {text = "MIT"}
+authors = [{name = "Marlon Barreto", email = "mbarretot@hotmail.com"}]
+keywords = ["RAG", "evaluation", "LLM", "AI"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+]
 requires-python = ">=3.11"
 dependencies = [
     "sentence-transformers>=3.4.0",
     "numpy>=2.0.0",
     "pydantic>=2.10.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/marlonbarreto-git/rag-evaluation-suite"
+Repository = "https://github.com/marlonbarreto-git/rag-evaluation-suite"
+Issues = "https://github.com/marlonbarreto-git/rag-evaluation-suite/issues"
 
 [project.optional-dependencies]
 dev = [
